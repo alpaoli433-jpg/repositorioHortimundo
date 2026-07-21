@@ -1,6 +1,14 @@
 import { createClient } from '@/lib/supabase/server'
+import { getPerfilActual } from '@/lib/supabase/perfil'
+import AccesoRestringido from '@/components/acceso-restringido'
 import NuevoClienteForm from './nuevo-cliente-form'
 export default async function ClientesPage() {
+  const { rol } = await getPerfilActual()
+
+  if (rol !== 'propietario') {
+    return <AccesoRestringido />
+  }
+
   const supabase = await createClient()
 
   const { data: clientes, error } = await supabase

@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HortiMundo — Panel del Propietario (v2 preliminar)</title>
+<style>
+  :root{
+    --bg: #efece0; --surface: #fbf9f2; --surface-2: #ffffff;
+    --ink: #23261c; --ink-soft: #5a5c4d; --line: #d9d3bd;
+    --primary: #1f3a2e; --primary-2: #2c4f3e; --leaf: #6b8e4e;
+    --harvest: #d98f2b; --brick: #a63a32;
+    --display: Georgia, 'Iowan Old Style', 'Palatino Linotype', serif;
+    --body: -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+    --mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  }
+  *{ box-sizing:border-box; }
+  body{ margin:0; background:var(--bg); color:var(--ink); font-family:var(--body); -webkit-font-smoothing:antialiased; }
+  .tag{ text-align:center; font-size:12px; color:#7a7c6c; padding:10px 0 0; }
+  .app{ display:grid; grid-template-columns:230px 1fr; min-height:100vh; }
+
+  .sidebar{ background:var(--primary); color:#eef1e9; padding:26px 16px; display:flex; flex-direction:column; gap:4px; overflow-y:auto; }
+  .brand{ margin-bottom:22px; }
+  .brand .stamp{ display:inline-flex; align-items:center; justify-content:center; width:36px; height:36px; border:2px solid var(--harvest); border-radius:50%; font-family:var(--display); font-weight:700; font-size:8.5px; color:var(--harvest); margin-bottom:8px; text-align:center; line-height:1.1; }
+  .brand h1{ font-family:var(--display); font-size:18px; margin:0; letter-spacing:.3px; color:#f6f3ea; }
+  .brand p{ margin:2px 0 0; font-size:10.5px; letter-spacing:1.5px; text-transform:uppercase; color:#a9b8a2; }
+  .nav-group{ margin-top:14px; }
+  .nav-label{ font-size:10px; letter-spacing:1.4px; text-transform:uppercase; color:#7f9077; margin:0 0 6px 8px; }
+  .nav-item{ display:flex; align-items:center; gap:9px; padding:8px 9px; border-radius:7px; font-size:13.5px; color:#dbe3d4; cursor:pointer; }
+  .nav-item .dot{ width:6px; height:6px; border-radius:50%; background:#5c7256; flex:none; }
+  .nav-item.active{ background:var(--primary-2); color:#fff; font-weight:600; }
+  .nav-item.active .dot{ background:var(--harvest); }
+  .nav-item.disabled{ opacity:.45; cursor:default; }
+  .nav-item.new::after{ content:"nuevo"; margin-left:auto; font-size:8.5px; background:var(--harvest); color:var(--primary); padding:2px 6px; border-radius:8px; font-weight:800; letter-spacing:.4px; }
+  .sidebar-footer{ margin-top:auto; padding-top:16px; border-top:1px solid rgba(255,255,255,.12); }
+  .user-chip{ display:flex; align-items:center; gap:10px; }
+  .avatar{ width:30px; height:30px; border-radius:50%; background:var(--harvest); color:var(--primary); display:flex; align-items:center; justify-content:center; font-weight:700; font-family:var(--display); font-size:12px; }
+  .user-chip .who{ font-size:12.5px; line-height:1.3; }
+  .user-chip .who b{ display:block; color:#fff; }
+  .user-chip .who span{ color:#9cae93; font-size:11px; }
+
+  main{ padding:24px 32px 50px; }
+  .view{ display:none; }
+  .view.active{ display:block; }
+  .topbar{ display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; }
+  .topbar h2{ font-family:var(--display); font-weight:400; font-size:23px; margin:0; }
+  .topbar .date{ color:var(--ink-soft); font-size:12.5px; margin-top:3px; }
+  .btn{ border:none; border-radius:8px; font-size:13px; font-weight:700; padding:10px 16px; cursor:default; }
+  .btn-primary{ background:var(--harvest); color:var(--primary); }
+  .btn-dark{ background:var(--primary); color:#fff; }
+  .btn-ghost{ background:var(--surface-2); border:1px solid var(--line); color:var(--ink); }
+  .btn-sm{ padding:6px 11px; font-size:11.5px; border-radius:7px; }
+
+  .card{ background:var(--surface-2); border:1px solid var(--line); border-radius:12px; padding:20px; margin-bottom:18px; }
+  .card h3{ font-family:var(--display); font-weight:400; font-size:16px; margin:0 0 4px; }
+  .card .sub{ font-size:12px; color:var(--ink-soft); margin-bottom:14px; }
+
+  .kpi-row{ display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:18px; }
+  .kpi{ background:var(--surface-2); border:1px solid var(--line); border-radius:12px; padding:16px 18px; }
+  .kpi .label{ font-size:11px; text-transform:uppercase; letter-spacing:.6px; color:var(--ink-soft); }
+  .kpi .value{ font-family:var(--mono); font-size:19px; font-weight:700; margin-top:6px; }
+
+  .quick-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:12px; }
+  .quick-btn{ background:var(--surface); border:1px dashed var(--line); border-radius:10px; padding:16px; text-align:center; }
+  .quick-btn .qi{ font-size:22px; }
+  .quick-btn .qt{ font-size:12.5px; font-weight:700; margin-top:6px; }
+
+  table{ width:100%; border-collapse:collapse; font-size:13px; }
+  th{ text-align:left; font-size:10.5px; letter-spacing:.5px; text-transform:uppercase; color:var(--ink-soft); padding:0 10px 8px; border-bottom:1px solid var(--line); font-weight:700; }
+  td{ padding:10px; border-bottom:1px solid var(--line); }
+  tr:last-child td{ border-bottom:none; }
+  tr.clickable{ cursor:pointer; }
+  .mono-num{ font-family:var(--mono); }
+  .badge{ display:inline-block; padding:3px 9px; border-radius:20px; font-size:10.5px; font-weight:700; }
+  .badge.activo{ background:#e4ecdb; color:var(--leaf); }
+  .badge.inactivo{ background:#eee; color:var(--ink-soft); }
+  .badge.saldo{ background:#f3e4de; color:var(--brick); }
+
+  .grid2{ display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+  .grid3{ display:grid; grid-template-columns:repeat(3,1fr); gap:18px; }
+
+  .ficha-header{ display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:16px; }
+  .ficha-title{ font-family:var(--display); font-size:20px; margin:0; }
+  .ficha-sub{ font-size:12.5px; color:var(--ink-soft); margin-top:3px; }
+  .stat-strip{ display:grid; grid-template-columns:repeat(5,1fr); border:1px solid var(--line); border-radius:10px; overflow:hidden; margin-bottom:16px; }
+  .stat-cell{ padding:14px 12px; border-right:1px solid var(--line); }
+  .stat-cell:last-child{ border-right:none; }
+  .stat-cell .l{ font-size:10px; text-transform:uppercase; color:var(--ink-soft); letter-spacing:.5px; }
+  .stat-cell .v{ font-family:var(--mono); font-size:15px; font-weight:700; margin-top:4px; }
+  .textarea-mock{ background:var(--surface); border:1px solid var(--line); border-radius:8px; padding:12px; font-size:12.5px; color:var(--ink-soft); min-height:50px; }
+
+  .var-pill{ font-family:var(--display); font-size:13px; }
+  .fresh-dot{ width:8px; height:8px; border-radius:50%; display:inline-block; margin-right:6px; }
+  .fresh-dot.ok{ background:var(--leaf); } .fresh-dot.warn{ background:var(--harvest); }
+
+  .emp-card{ display:flex; justify-content:space-between; align-items:center; padding:12px 0; border-bottom:1px solid var(--line); }
+  .emp-card:last-child{ border-bottom:none; }
+  .emp-info b{ display:block; font-size:13.5px; }
+  .emp-info span{ font-size:11.5px; color:var(--ink-soft); }
+  .emp-actions{ display:flex; gap:6px; }
+
+  .doc-preview{ border:1.5px dashed var(--line); border-radius:10px; padding:22px; background:var(--surface); font-size:12.5px; }
+  .doc-preview h4{ font-family:var(--display); font-size:15px; margin:0 0 2px; text-align:center; }
+  .doc-preview .doc-sub{ text-align:center; color:var(--ink-soft); font-size:11px; margin-bottom:16px; }
+  .doc-row{ display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px dotted var(--line); }
+  .doc-total{ display:flex; justify-content:space-between; padding:10px 0 0; font-weight:700; font-family:var(--mono); }
+  .sign-row{ display:flex; justify-content:space-between; margin-top:36px; }
+  .sign-box{ width:45%; border-top:1px solid var(--ink); text-align:center; padding-top:6px; font-size:11px; color:var(--ink-soft); }
+
+  .venta-form{ display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:16px; }
+  .field label{ font-size:11px; color:var(--ink-soft); display:block; margin-bottom:5px; }
+  .field .input{ background:var(--surface); border:1px solid var(--line); border-radius:8px; padding:9px 11px; font-size:13px; }
+  .prod-table th, .prod-table td{ font-size:12.5px; }
+  .add-row{ text-align:center; padding:10px; border:1px dashed var(--line); border-radius:8px; color:var(--ink-soft); font-size:12.5px; margin-top:8px; }
+  .totales-box{ margin-left:auto; width:280px; margin-top:14px; }
+  .totales-box .trow{ display:flex; justify-content:space-between; padding:6px 0; font-size:13px; }
+  .totales-box .trow.total{ font-weight:700; font-size:15px; border-top:1px solid var(--line); padding-top:10px; font-family:var(--mono); }
+
+  .fact-layout{ display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+  .kude{ background:#fff; border:2px solid var(--primary); border-radius:6px; padding:16px; font-size:11px; }
+  .kude .khead{ display:flex; justify-content:space-between; border-bottom:2px solid var(--primary); padding-bottom:10px; margin-bottom:10px; }
+  .kude .klogo{ font-family:var(--display); font-weight:700; color:var(--primary); font-size:13px; }
+  .kude .ktim{ text-align:right; font-size:10px; }
+  .kude table{ font-size:10px; }
+  .kude th, .kude td{ padding:5px 6px; }
+  .kude .ktotal{ text-align:right; font-weight:700; font-family:var(--mono); font-size:13px; margin-top:8px; }
+  .kude .kqr{ width:60px; height:60px; margin-top:10px; background:
+      repeating-linear-gradient(0deg, #1a1a1a 0 4px, transparent 4px 8px),
+      repeating-linear-gradient(90deg, #1a1a1a 0 4px, transparent 4px 8px);
+      background-blend-mode:multiply; border:1.5px solid #1a1a1a; }
+
+  .footnote{ text-align:center; font-size:11px; color:var(--ink-soft); margin-top:10px; }
+</style>
+</head>
+<body>
+<div class="tag">Versión preliminar para aprobación de Hugo — solo diseño de frontend, sin lógica de backend activa</div>
+<div class="app">
+
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="stamp">HORTI<br>MUNDO</div>
+      <h1>HortiMundo</h1>
+      <p>Panel de gestión</p>
+    </div>
+    <div class="nav-group">
+      <p class="nav-label">General</p>
+      <div class="nav-item active" data-view="panel"><span class="dot"></span> Panel principal</div>
+    </div>
+    <div class="nav-group">
+      <p class="nav-label">Comercial</p>
+      <div class="nav-item new" data-view="venta"><span class="dot"></span> Cargar venta</div>
+      <div class="nav-item new" data-view="facturacion"><span class="dot"></span> Facturación</div>
+      <div class="nav-item new" data-view="clientes"><span class="dot"></span> Clientes</div>
+    </div>
+    <div class="nav-group">
+      <p class="nav-label">Operación</p>
+      <div class="nav-item disabled"><span class="dot"></span> Mercadería</div>
+      <div class="nav-item disabled"><span class="dot"></span> Stock</div>
+      <div class="nav-item new" data-view="lechugas"><span class="dot"></span> Control de Lechugas</div>
+      <div class="nav-item disabled"><span class="dot"></span> Merma</div>
+    </div>
+    <div class="nav-group">
+      <p class="nav-label">Finanzas</p>
+      <div class="nav-item disabled"><span class="dot"></span> Combustible</div>
+      <div class="nav-item disabled"><span class="dot"></span> Gastos</div>
+      <div class="nav-item new" data-view="personal"><span class="dot"></span> Personal</div>
+      <div class="nav-item disabled"><span class="dot"></span> Reportes</div>
+    </div>
+    <div class="sidebar-footer">
+      <div class="user-chip">
+        <div class="avatar">H</div>
+        <div class="who"><b>Hugo Sanabria</b><span>Propietario</span></div>
+      </div>
+    </div>
+  </aside>
+
+  <main>
+
+    <div class="view active" id="view-panel">
+      <div class="topbar">
+        <div><h2>Buen día, Hugo</h2><div class="date">Miércoles, 15 de julio · HortiMundo, Caacupé</div></div>
+        <button class="btn btn-primary">＋ Cargar venta</button>
+      </div>
+
+      <div class="kpi-row">
+        <div class="kpi"><div class="label">Facturado hoy</div><div class="value">₲ 1.457.500</div></div>
+        <div class="kpi"><div class="label">Ventas registradas</div><div class="value">6</div></div>
+        <div class="kpi"><div class="label">Clientes con saldo</div><div class="value">2</div></div>
+        <div class="kpi"><div class="label">Facturas del día</div><div class="value">4 / 6</div></div>
+      </div>
+
+      <div class="card">
+        <h3>Accesos rápidos</h3>
+        <div class="sub">Lo que se usa todos los días</div>
+        <div class="quick-grid">
+          <div class="quick-btn"><div class="qi">🧾</div><div class="qt">Cargar venta</div></div>
+          <div class="quick-btn"><div class="qi">👤</div><div class="qt">Nuevo cliente</div></div>
+          <div class="quick-btn"><div class="qi">🥬</div><div class="qt">Control lechugas</div></div>
+          <div class="quick-btn"><div class="qi">🧑‍🌾</div><div class="qt">Personal</div></div>
+        </div>
+      </div>
+
+      <div class="grid2">
+        <div class="card">
+          <h3>Clientes con saldo pendiente</h3>
+          <div class="sub">Requieren seguimiento</div>
+          <table>
+            <tr><th>Cliente</th><th>Última compra</th><th>Saldo</th></tr>
+            <tr><td>Hipermercado Norte</td><td>10/07</td><td><span class="badge saldo">₲ 320.000</span></td></tr>
+            <tr><td>Mini Market Reduc.</td><td>12/07</td><td><span class="badge saldo">₲ 145.000</span></td></tr>
+          </table>
+        </div>
+        <div class="card">
+          <h3>Avisos en tiempo real</h3>
+          <div class="sub">Actividad de hoy</div>
+          <table>
+            <tr><td>🔴 Stock bajo: Tomate Perita — 12 kg</td></tr>
+            <tr><td>🟢 Rocío cargó combustible — ₲ 150.000</td></tr>
+            <tr><td>🟡 Merma: Lechuga Crespa — 6 un.</td></tr>
+            <tr><td>🟢 Factura 0001635 aprobada por SIFEN</td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="view" id="view-venta">
+      <div class="topbar">
+        <div><h2>Cargar venta</h2><div class="date">Registrá una operación comercial completa</div></div>
+        <button class="btn btn-ghost">Cancelar</button>
+      </div>
+
+      <div class="card">
+        <div class="venta-form">
+          <div class="field"><label>Cliente</label><div class="input">Supermercado Central ▾</div></div>
+          <div class="field"><label>Fecha</label><div class="input">15/07/2026</div></div>
+          <div class="field"><label>Condición de venta</label><div class="input">Contado ▾</div></div>
+          <div class="field"><label>Método de pago</label><div class="input">Transferencia ▾</div></div>
+        </div>
+
+        <table class="prod-table">
+          <tr><th>Producto</th><th>Cant.</th><th>Precio unit.</th><th>Desc.</th><th>Subtotal</th></tr>
+          <tr><td>Tomate Perita</td><td class="mono-num">40 kg</td><td class="mono-num">12.000</td><td class="mono-num">0</td><td class="mono-num">480.000</td></tr>
+          <tr><td>Cebolla</td><td class="mono-num">60 kg</td><td class="mono-num">7.000</td><td class="mono-num">0</td><td class="mono-num">420.000</td></tr>
+          <tr><td>Zanahoria</td><td class="mono-num">30 kg</td><td class="mono-num">7.000</td><td class="mono-num">0</td><td class="mono-num">210.000</td></tr>
+        </table>
+        <div class="add-row">＋ Agregar producto</div>
+
+        <div class="totales-box">
+          <div class="trow"><span>Subtotal</span><span class="mono-num">₲ 1.110.000</span></div>
+          <div class="trow"><span>Descuentos</span><span class="mono-num">₲ 0</span></div>
+          <div class="trow"><span>IVA (5%)</span><span class="mono-num">₲ 52.857</span></div>
+          <div class="trow total"><span>Total</span><span>₲ 1.110.000</span></div>
+        </div>
+
+        <div class="field" style="margin-top:14px;"><label>Observaciones</label><div class="input">Entrega en depósito, turno tarde</div></div>
+
+        <div style="display:flex; gap:10px; margin-top:18px;">
+          <button class="btn btn-dark">Registrar venta</button>
+          <button class="btn btn-primary">Registrar y emitir factura</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="view" id="view-facturacion">
+      <div class="topbar">
+        <div><h2>Emitir factura</h2><div class="date">A partir de la venta registrada — completá lo que falte del talonario</div></div>
+      </div>
+
+      <div class="fact-layout">
+        <div class="card">
+          <h3>Datos de la factura</h3>
+          <div class="venta-form">
+            <div class="field"><label>N° de factura</label><div class="input">001-001-0001636</div></div>
+            <div class="field"><label>Fecha</label><div class="input">15/07/2026</div></div>
+            <div class="field"><label>Cliente</label><div class="input">Supermercado Central</div></div>
+            <div class="field"><label>RUC</label><div class="input">80456123-9</div></div>
+            <div class="field"><label>Dirección</label><div class="input">Caacupé Centro</div></div>
+            <div class="field"><label>Condición de venta</label><div class="input">Contado ▾</div></div>
+          </div>
+          <div class="sub" style="margin-top:6px;">Productos, cantidades e IVA se completan automáticamente desde la venta cargada.</div>
+          <div class="field" style="margin-top:10px;"><label>Observaciones</label><div class="input">—</div></div>
+          <div style="margin-top:16px; display:flex; gap:10px;">
+            <button class="btn btn-primary">Emitir factura electrónica</button>
+            <button class="btn btn-ghost">⬇ Descargar PDF</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Vista previa</h3>
+          <div class="sub">Diseño limpio, inspirado en el formato electrónico</div>
+          <div class="kude">
+            <div class="khead">
+              <div class="klogo">HORTIMUNDO</div>
+              <div class="ktim">Timbrado 18797706<br>001-001-0001636</div>
+            </div>
+            <table>
+              <tr><th>Producto</th><th>Cant.</th><th>P. Unit.</th><th>5%</th></tr>
+              <tr><td>Tomate Perita</td><td>40 kg</td><td>12.000</td><td>480.000</td></tr>
+              <tr><td>Cebolla</td><td>60 kg</td><td>7.000</td><td>420.000</td></tr>
+              <tr><td>Zanahoria</td><td>30 kg</td><td>7.000</td><td>210.000</td></tr>
+            </table>
+            <div class="ktotal">Total: ₲ 1.110.000</div>
+            <div class="kqr"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="view" id="view-clientes">
+      <div class="topbar">
+        <div><h2>Clientes</h2><div class="date">Ficha completa de cada relación comercial</div></div>
+        <button class="btn btn-primary">＋ Nuevo cliente</button>
+      </div>
+
+      <div class="card">
+        <table>
+          <tr><th>Cliente</th><th>RUC</th><th>Estado</th><th>Total comprado</th><th>Última compra</th><th>Saldo</th></tr>
+          <tr class="clickable"><td><b>Supermercado Central</b></td><td>80456123-9</td><td><span class="badge activo">Activo</span></td><td class="mono-num">₲ 12.480.000</td><td>15/07</td><td class="mono-num">₲ 0</td></tr>
+          <tr class="clickable"><td>Hipermercado Norte</td><td>80112233-4</td><td><span class="badge activo">Activo</span></td><td class="mono-num">₲ 8.920.000</td><td>10/07</td><td><span class="badge saldo">₲ 320.000</span></td></tr>
+          <tr class="clickable"><td>Mini Market Reducto</td><td>80998877-2</td><td><span class="badge activo">Activo</span></td><td class="mono-num">₲ 3.150.000</td><td>12/07</td><td><span class="badge saldo">₲ 145.000</span></td></tr>
+          <tr class="clickable"><td>Despensa Ybycuí</td><td>80554411-8</td><td><span class="badge inactivo">Inactivo</span></td><td class="mono-num">₲ 610.000</td><td>02/05</td><td class="mono-num">₲ 0</td></tr>
+        </table>
+      </div>
+
+      <div class="card">
+        <div class="ficha-header">
+          <div>
+            <p class="ficha-title">Supermercado Central</p>
+            <div class="ficha-sub">RUC 80456123-9 · Caacupé Centro · 0981 234 567 · compras@supercentral.com.py</div>
+          </div>
+          <button class="btn btn-ghost btn-sm">Editar ficha</button>
+        </div>
+
+        <div class="stat-strip">
+          <div class="stat-cell"><div class="l">Total comprado</div><div class="v">₲ 12.48M</div></div>
+          <div class="stat-cell"><div class="l">Total vendido</div><div class="v">₲ 12.48M</div></div>
+          <div class="stat-cell"><div class="l">Última compra</div><div class="v">15/07</div></div>
+          <div class="stat-cell"><div class="l">Última venta</div><div class="v">15/07</div></div>
+          <div class="stat-cell"><div class="l">Saldo</div><div class="v">₲ 0</div></div>
+        </div>
+
+        <h3 style="font-size:14px;">Historial reciente</h3>
+        <table>
+          <tr><th>Fecha</th><th>Tipo</th><th>Detalle</th><th>Monto</th></tr>
+          <tr><td>15/07</td><td><span class="badge activo">Venta</span></td><td>Tomate, Cebolla, Zanahoria</td><td class="mono-num">₲ 1.110.000</td></tr>
+          <tr><td>08/07</td><td><span class="badge activo">Venta</span></td><td>Lechuga, Locote Verde</td><td class="mono-num">₲ 620.000</td></tr>
+          <tr><td>01/07</td><td><span class="badge activo">Venta</span></td><td>Zapallo, Cebolla</td><td class="mono-num">₲ 890.000</td></tr>
+        </table>
+
+        <h3 style="font-size:14px; margin-top:16px;">Observaciones internas</h3>
+        <div class="textarea-mock">Prefiere entrega antes de las 8:00. Paga por transferencia, siempre al contado.</div>
+      </div>
+    </div>
+
+    <div class="view" id="view-lechugas">
+      <div class="topbar">
+        <div><h2>Control de Lechugas</h2><div class="date">Seguimiento independiente del inventario general</div></div>
+        <button class="btn btn-primary">＋ Registrar movimiento</button>
+      </div>
+
+      <div class="kpi-row">
+        <div class="kpi"><div class="label">Variedades activas</div><div class="value">4</div></div>
+        <div class="kpi"><div class="label">Total disponible</div><div class="value">186 un.</div></div>
+        <div class="kpi"><div class="label">Por vencer</div><div class="value">18 un.</div></div>
+        <div class="kpi"><div class="label">Proveedores</div><div class="value">2</div></div>
+      </div>
+
+      <div class="card">
+        <h3>Variedades</h3>
+        <div class="sub">Detalle exclusivo de lechugas, separado del stock general</div>
+        <table>
+          <tr><th>Variedad</th><th>Disponible</th><th>Última entrada</th><th>Proveedor</th><th>Estado</th></tr>
+          <tr><td class="var-pill">Lechuga Repollada</td><td class="mono-num">64 un.</td><td>13/07</td><td>Chacra San Blas</td><td><span class="fresh-dot ok"></span>Fresca</td></tr>
+          <tr><td class="var-pill">Lechuga Crespa</td><td class="mono-num">40 un.</td><td>11/07</td><td>Chacra San Blas</td><td><span class="fresh-dot warn"></span>Por vencer</td></tr>
+          <tr><td class="var-pill">Lechuga Mantecosa</td><td class="mono-num">52 un.</td><td>14/07</td><td>Chacra Ybycuí</td><td><span class="fresh-dot ok"></span>Fresca</td></tr>
+          <tr><td class="var-pill">Lechuga Morada</td><td class="mono-num">30 un.</td><td>09/07</td><td>Chacra Ybycuí</td><td><span class="fresh-dot warn"></span>Por vencer</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <div class="view" id="view-personal">
+      <div class="topbar">
+        <div><h2>Personal</h2><div class="date">Fichas y documentos imprimibles</div></div>
+        <button class="btn btn-primary">＋ Nuevo empleado</button>
+      </div>
+
+      <div class="grid2">
+        <div class="card">
+          <h3>Empleados</h3>
+          <div class="sub">Ficha, salario y documentos por empleado</div>
+          <div class="emp-card">
+            <div class="emp-info"><b>Rocío Benítez</b><span>Ayudante · Ingreso 03/2025 · Activa</span></div>
+            <div class="emp-actions">
+              <button class="btn btn-ghost btn-sm">Recibo</button>
+              <button class="btn btn-ghost btn-sm">Adelanto</button>
+              <button class="btn btn-ghost btn-sm">Préstamo</button>
+            </div>
+          </div>
+          <div class="emp-card">
+            <div class="emp-info"><b>Derlis Ovelar</b><span>Chofer / reparto · Ingreso 08/2024 · Activo</span></div>
+            <div class="emp-actions">
+              <button class="btn btn-ghost btn-sm">Recibo</button>
+              <button class="btn btn-ghost btn-sm">Adelanto</button>
+              <button class="btn btn-ghost btn-sm">Préstamo</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Vista previa — Recibo de salario</h3>
+          <div class="sub">Listo para imprimir y firmar</div>
+          <div class="doc-preview">
+            <h4>HortiMundo</h4>
+            <div class="doc-sub">Recibo de salario — Julio 2026</div>
+            <div class="doc-row"><span>Empleado</span><span>Rocío Benítez</span></div>
+            <div class="doc-row"><span>Cargo</span><span>Ayudante</span></div>
+            <div class="doc-row"><span>Período</span><span>01/07 – 31/07/2026</span></div>
+            <div class="doc-row"><span>Salario base</span><span class="mono-num">₲ 2.800.000</span></div>
+            <div class="doc-row"><span>Descuentos</span><span class="mono-num">₲ 0</span></div>
+            <div class="doc-total"><span>Total a pagar</span><span>₲ 2.800.000</span></div>
+            <div class="sign-row">
+              <div class="sign-box">Firma del empleado</div>
+              <div class="sign-box">Firma del empleador</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid2">
+        <div class="card">
+          <h3>Vale de adelanto</h3>
+          <div class="sub">Genera documento imprimible</div>
+          <div class="venta-form">
+            <div class="field"><label>Empleado</label><div class="input">Derlis Ovelar ▾</div></div>
+            <div class="field"><label>Fecha</label><div class="input">15/07/2026</div></div>
+            <div class="field"><label>Monto solicitado</label><div class="input">₲ 300.000</div></div>
+            <div class="field"><label>Observaciones</label><div class="input">A descontar en agosto</div></div>
+          </div>
+          <button class="btn btn-primary" style="margin-top:10px;">Generar vale imprimible</button>
+        </div>
+
+        <div class="card">
+          <h3>Préstamo al personal</h3>
+          <div class="sub">Genera documento imprimible con condiciones</div>
+          <div class="venta-form">
+            <div class="field"><label>Empleado</label><div class="input">Rocío Benítez ▾</div></div>
+            <div class="field"><label>Fecha</label><div class="input">15/07/2026</div></div>
+            <div class="field"><label>Monto</label><div class="input">₲ 800.000</div></div>
+            <div class="field"><label>Condiciones</label><div class="input">4 cuotas de ₲ 200.000</div></div>
+          </div>
+          <button class="btn btn-primary" style="margin-top:10px;">Generar documento imprimible</button>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+  document.querySelectorAll('.nav-item[data-view]').forEach(function(item){
+    item.addEventListener('click', function(){
+      document.querySelectorAll('.nav-item[data-view]').forEach(function(i){ i.classList.remove('active'); });
+      document.querySelectorAll('.view').forEach(function(v){ v.classList.remove('active'); });
+      item.classList.add('active');
+      document.getElementById('view-' + item.dataset.view).classList.add('active');
+    });
+  });
+</script>
+</body>
+</html>
