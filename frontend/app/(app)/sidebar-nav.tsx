@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation'
 
 export type NavItem = {
   label: string
+  icon: string
   href?: string
   disabled?: boolean
   soloPropietario?: boolean
@@ -29,7 +30,7 @@ export default function SidebarNav({ groups }: { groups: NavGroup[] }) {
             if (!item.href || item.disabled) {
               return (
                 <div className="nav-item disabled" key={item.label}>
-                  <span className="dot"></span> {item.label}
+                  <span className="nav-icon">{item.icon}</span> {item.label}
                 </div>
               )
             }
@@ -40,7 +41,7 @@ export default function SidebarNav({ groups }: { groups: NavGroup[] }) {
                 className={`nav-item${active ? ' active' : ''}`}
                 key={item.label}
               >
-                <span className="dot"></span> {item.label}
+                <span className="nav-icon">{item.icon}</span> {item.label}
               </Link>
             )
           })}

@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
+import { useCargando } from '@/lib/use-cargando'
 
 const UNIDADES = ['kg', 'unidad', 'atado', 'docena', 'cajón']
 
@@ -11,16 +12,19 @@ export default function NuevoProductoForm() {
   const [unidad, setUnidad] = useState(UNIDADES[0])
   const [error, setError] = useState('')
   const router = useRouter()
+  const { cargando, conCargando } = useCargando()
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError('')
 
     const supabase = createClient()
-    const { error } = await supabase.from('productos').insert({
-      nombre,
-      unidad,
-    })
+    const { error } = await conCargando(() =>
+      supabase.from('productos').insert({
+        nombre,
+        unidad,
+      })
+    )
 
     if (error) {
       if (error.code === '23505') {
@@ -56,8 +60,8 @@ export default function NuevoProductoForm() {
           ))}
         </select>
       </div>
-      <button type="submit" className="btn btn-primary">
-        Agregar
+      <button type="submit" className="btn btn-primary" disabled={cargando}>
+        {cargando ? 'Agregando…' : 'Agregar'}
       </button>
       {error && <p style={{ color: 'var(--brick)', marginLeft: 8 }}>{error}</p>}
     </form>

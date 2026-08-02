@@ -3,6 +3,8 @@
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
+import NumeroInput from '@/components/numero-input'
+import { useCargando } from '@/lib/use-cargando'
 
 const CATEGORIAS = ['insumos', 'mantenimiento', 'servicios', 'impuestos', 'otros']
 
@@ -12,23 +14,26 @@ function hoy() {
 
 export default function NuevoGastoForm() {
   const [categoria, setCategoria] = useState(CATEGORIAS[0])
-  const [monto, setMonto] = useState('')
+  const [monto, setMonto] = useState<number | ''>('')
   const [descripcion, setDescripcion] = useState('')
   const [fecha, setFecha] = useState(hoy())
   const [error, setError] = useState('')
   const router = useRouter()
+  const { cargando, conCargando } = useCargando()
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError('')
 
     const supabase = createClient()
-    const { error } = await supabase.from('gastos').insert({
-      categoria,
-      monto: Number(monto),
-      descripcion: descripcion || null,
-      fecha,
-    })
+    const { error } = await conCargando(() =>
+      supabase.from('gastos').insert({
+        categoria,
+        monto: monto === '' ? 0 : monto,
+        descripcion: descripcion || null,
+        fecha,
+      })
+    )
 
     if (error) {
       setError('No se pudo guardar: ' + error.message)
@@ -56,14 +61,7 @@ export default function NuevoGastoForm() {
 
       <div className="field">
         <label>Monto</label>
-        <input
-          type="number"
-          step="1"
-          min="1"
-          value={monto}
-          onChange={(e) => setMonto(e.target.value)}
-          required
-        />
+        <NumeroInput value={monto} onChange={setMonto} required />
       </div>
 
       <div className="field" style={{ flex: 1 }}>
@@ -76,8 +74,8 @@ export default function NuevoGastoForm() {
         <input type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} required />
       </div>
 
-      <button type="submit" className="btn btn-primary">
-        Registrar
+      <button type="submit" className="btn btn-primary" disabled={cargando}>
+        {cargando ? 'Registrando…' : 'Registrar'}
       </button>
 
       {error && <p style={{ color: 'var(--brick)', width: '100%' }}>{error}</p>}

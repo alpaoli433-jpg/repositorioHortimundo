@@ -12,33 +12,32 @@ export default async function AppLayout({
   const gruposBase: NavGroup[] = [
     {
       label: 'General',
-      items: [{ label: 'Panel principal', href: '/' }],
+      items: [{ label: 'Panel principal', icon: '🏠', href: '/' }],
     },
     {
       label: 'Comercial',
       items: [
-        { label: 'Cargar venta', disabled: true, soloPropietario: true },
-        { label: 'Facturación', disabled: true, soloPropietario: true },
-        { label: 'Clientes', href: '/clientes', soloPropietario: true },
+        { label: 'Cargar venta', icon: '🧾', href: '/ventas', soloPropietario: true },
+        { label: 'Facturación', icon: '📄', href: '/facturacion', soloPropietario: true },
+        { label: 'Clientes', icon: '👤', href: '/clientes', soloPropietario: true },
       ],
     },
     {
       label: 'Operación',
       items: [
-        { label: 'Productos', href: '/productos' },
-        { label: 'Mercadería', href: '/mercaderia' },
-        { label: 'Stock', href: '/stock' },
-        { label: 'Control de Lechugas', disabled: true },
-        { label: 'Merma', href: '/merma' },
+        { label: 'Productos', icon: '🍅', href: '/productos' },
+        { label: 'Mercadería', icon: '📦', href: '/mercaderia' },
+        { label: 'Stock', icon: '📊', href: '/stock' },
+        { label: 'Control de Lechugas', icon: '🥬', href: '/lechugas' },
+        { label: 'Merma', icon: '🗑️', href: '/merma' },
       ],
     },
     {
       label: 'Finanzas',
       items: [
-        { label: 'Combustible', href: '/combustible' },
-        { label: 'Gastos', href: '/gastos', soloPropietario: true },
-        { label: 'Personal', href: '/personal', soloPropietario: true },
-        { label: 'Reportes', disabled: true, soloPropietario: true },
+        { label: 'Combustible', icon: '⛽', href: '/combustible' },
+        { label: 'Gastos', icon: '💸', href: '/gastos', soloPropietario: true },
+        { label: 'Personal', icon: '🧑‍🌾', href: '/personal', soloPropietario: true },
       ],
     },
   ]
