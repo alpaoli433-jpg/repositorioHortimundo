@@ -1,8 +1,12 @@
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
+import { getPerfilActual } from '@/lib/supabase/perfil'
 import NuevoMovimientoForm from './nuevo-movimiento-form'
+import FilaMovimiento from './fila-movimiento'
 
 export default async function MercaderiaPage() {
+  const { rol } = await getPerfilActual()
+  const puedeEditar = rol === 'propietario'
   const supabase = await createClient()
 
   const { data: productos } = await supabase
@@ -14,6 +18,7 @@ export default async function MercaderiaPage() {
     .from('mercaderia_movimientos')
     .select('*, productos(nombre, unidad)')
     .order('fecha', { ascending: false })
+    .order('hora', { ascending: false, nullsFirst: false })
     .order('creado_en', { ascending: false })
     .limit(50)
 
@@ -22,13 +27,15 @@ export default async function MercaderiaPage() {
       <div className="topbar">
         <div>
           <h2>Mercadería</h2>
-          <div className="date">Entradas y salidas de mercadería</div>
+          <div className="date">Entradas, salidas y ajustes de mercadería</div>
         </div>
       </div>
 
       <div className="card">
         <h3>Registrar movimiento</h3>
-        <div className="sub">Entrada o salida de un producto del catálogo</div>
+        <div className="sub">
+          Entrada, salida, o ajuste manual del stock (solo propietario) de un producto del catálogo
+        </div>
 
         {productos && productos.length > 0 ? (
           <NuevoMovimientoForm productos={productos} />
@@ -49,27 +56,23 @@ export default async function MercaderiaPage() {
             <thead>
               <tr>
                 <th>Fecha</th>
+                <th>Hora</th>
                 <th>Producto</th>
                 <th>Tipo</th>
                 <th>Cantidad</th>
-                <th>Proveedor</th>
+                <th>Proveedor / Motivo</th>
+                <th>Observaciones</th>
+                {puedeEditar && <th></th>}
               </tr>
             </thead>
             <tbody>
               {movimientos.map((m) => (
-                <tr key={m.id}>
-                  <td>{m.fecha}</td>
-                  <td>{m.productos?.nombre}</td>
-                  <td>
-                    <span className={`badge ${m.tipo === 'entrada' ? 'activo' : 'saldo'}`}>
-                      {m.tipo}
-                    </span>
-                  </td>
-                  <td className="mono-num">
-                    {m.cantidad} {m.productos?.unidad}
-                  </td>
-                  <td>{m.proveedor ?? '—'}</td>
-                </tr>
+                <FilaMovimiento
+                  key={m.id}
+                  movimiento={m}
+                  productos={productos ?? []}
+                  puedeEditar={puedeEditar}
+                />
               ))}
             </tbody>
           </table>
