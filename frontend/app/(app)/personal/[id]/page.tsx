@@ -7,6 +7,9 @@ import NuevoPagoForm from './nuevo-pago-form'
 import NuevoBonoForm from './nuevo-bono-form'
 import NuevoValeForm from './nuevo-vale-form'
 import NuevoPrestamoForm from './nuevo-prestamo-form'
+import FilaBono from './fila-bono'
+import FilaVale from './fila-vale'
+import FilaPrestamo from './fila-prestamo'
 
 export default async function EmpleadoPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -125,16 +128,7 @@ export default async function EmpleadoPage({ params }: { params: Promise<{ id: s
             </thead>
             <tbody>
               {bonos.map((b) => (
-                <tr key={b.id}>
-                  <td>{b.fecha}</td>
-                  <td>{b.motivo ?? '—'}</td>
-                  <td className="mono-num">₲ {Number(b.monto).toLocaleString('es-PY')}</td>
-                  <td>
-                    <Link href={`/personal/${empleado.id}/bono/${b.id}`} className="btn btn-ghost btn-sm">
-                      Ver documento
-                    </Link>
-                  </td>
-                </tr>
+                <FilaBono key={b.id} bono={b} empleadoId={empleado.id} />
               ))}
             </tbody>
           </table>
@@ -162,16 +156,7 @@ export default async function EmpleadoPage({ params }: { params: Promise<{ id: s
             </thead>
             <tbody>
               {vales.map((v) => (
-                <tr key={v.id}>
-                  <td>{v.fecha}</td>
-                  <td>{v.observaciones ?? '—'}</td>
-                  <td className="mono-num">₲ {Number(v.monto).toLocaleString('es-PY')}</td>
-                  <td>
-                    <Link href={`/personal/${empleado.id}/vale/${v.id}`} className="btn btn-ghost btn-sm">
-                      Ver documento
-                    </Link>
-                  </td>
-                </tr>
+                <FilaVale key={v.id} vale={v} empleadoId={empleado.id} />
               ))}
             </tbody>
           </table>
@@ -201,16 +186,7 @@ export default async function EmpleadoPage({ params }: { params: Promise<{ id: s
             </thead>
             <tbody>
               {prestamos.map((p) => (
-                <tr key={p.id}>
-                  <td>{p.fecha}</td>
-                  <td>{p.condiciones ?? '—'}</td>
-                  <td className="mono-num">₲ {Number(p.monto).toLocaleString('es-PY')}</td>
-                  <td>
-                    <Link href={`/personal/${empleado.id}/prestamo/${p.id}`} className="btn btn-ghost btn-sm">
-                      Ver documento
-                    </Link>
-                  </td>
-                </tr>
+                <FilaPrestamo key={p.id} prestamo={p} empleadoId={empleado.id} />
               ))}
             </tbody>
           </table>

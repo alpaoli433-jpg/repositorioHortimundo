@@ -3,6 +3,8 @@
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
+import NumeroInput from '@/components/numero-input'
+import { useCargando } from '@/lib/use-cargando'
 
 function mesActual() {
   return new Date().toISOString().slice(0, 7)
@@ -11,33 +13,47 @@ function mesActual() {
 export default function NuevoPagoForm({
   empleadoId,
   salarioSugerido,
+  onCreated,
 }: {
   empleadoId: string
   salarioSugerido: number
+  onCreated?: (id: string) => void
 }) {
   const [mes, setMes] = useState(mesActual())
-  const [monto, setMonto] = useState(String(salarioSugerido ?? ''))
+  const [monto, setMonto] = useState<number | ''>(salarioSugerido ?? '')
   const [error, setError] = useState('')
   const router = useRouter()
+  const { cargando, conCargando } = useCargando()
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError('')
 
     const supabase = createClient()
-    const { error } = await supabase.from('salarios_pagados').insert({
-      empleado_id: empleadoId,
-      monto: Number(monto),
-      mes: `${mes}-01`,
-    })
+    const { data, error } = await conCargando(() =>
+      supabase
+        .from('salarios_pagados')
+        .insert({
+          empleado_id: empleadoId,
+          monto: monto === '' ? 0 : monto,
+          mes: `${mes}-01`,
+        })
+        .select()
+        .single()
+    )
 
     if (error) {
       setError('No se pudo guardar: ' + error.message)
       return
     }
 
+    if (onCreated) {
+      onCreated(data.id)
+      return
+    }
+
     setMes(mesActual())
-    setMonto(String(salarioSugerido ?? ''))
+    setMonto(salarioSugerido ?? '')
     router.refresh()
   }
 
@@ -50,18 +66,11 @@ export default function NuevoPagoForm({
 
       <div className="field">
         <label>Monto</label>
-        <input
-          type="number"
-          step="1"
-          min="1"
-          value={monto}
-          onChange={(e) => setMonto(e.target.value)}
-          required
-        />
+        <NumeroInput value={monto} onChange={setMonto} required />
       </div>
 
-      <button type="submit" className="btn btn-primary">
-        Registrar pago
+      <button type="submit" className="btn btn-primary" disabled={cargando}>
+        {cargando ? 'Registrando…' : 'Registrar pago'}
       </button>
 
       {error && <p style={{ color: 'var(--brick)', marginLeft: 8 }}>{error}</p>}

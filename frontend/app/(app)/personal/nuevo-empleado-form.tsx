@@ -3,33 +3,68 @@
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
+import NumeroInput from '@/components/numero-input'
+import { useCargando } from '@/lib/use-cargando'
 
-export default function NuevoEmpleadoForm() {
-  const [nombre, setNombre] = useState('')
-  const [documento, setDocumento] = useState('')
-  const [cargo, setCargo] = useState('')
-  const [fechaIngreso, setFechaIngreso] = useState('')
-  const [salario, setSalario] = useState('')
-  const [observaciones, setObservaciones] = useState('')
+export type Empleado = {
+  id: string
+  nombre: string
+  documento: string | null
+  cargo: string | null
+  fecha_ingreso: string | null
+  salario: number
+  estado: string
+  observaciones: string | null
+}
+
+export default function NuevoEmpleadoForm({
+  registroExistente,
+  onGuardado,
+}: {
+  registroExistente?: Empleado
+  onGuardado?: () => void
+}) {
+  const [nombre, setNombre] = useState(registroExistente?.nombre ?? '')
+  const [documento, setDocumento] = useState(registroExistente?.documento ?? '')
+  const [cargo, setCargo] = useState(registroExistente?.cargo ?? '')
+  const [fechaIngreso, setFechaIngreso] = useState(registroExistente?.fecha_ingreso ?? '')
+  const [salario, setSalario] = useState<number | ''>(registroExistente?.salario ?? '')
+  const [estado, setEstado] = useState(registroExistente?.estado ?? 'activo')
+  const [observaciones, setObservaciones] = useState(registroExistente?.observaciones ?? '')
   const [error, setError] = useState('')
   const router = useRouter()
+  const { cargando, conCargando } = useCargando()
+  const editando = Boolean(registroExistente)
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError('')
 
     const supabase = createClient()
-    const { error } = await supabase.from('empleados').insert({
+    const datos = {
       nombre,
       documento: documento || null,
       cargo: cargo || null,
       fecha_ingreso: fechaIngreso || null,
-      salario: salario ? Number(salario) : 0,
+      salario: salario === '' ? 0 : salario,
+      estado,
       observaciones: observaciones || null,
-    })
+    }
+
+    const { error } = await conCargando(() =>
+      editando
+        ? supabase.from('empleados').update(datos).eq('id', registroExistente!.id)
+        : supabase.from('empleados').insert(datos)
+    )
 
     if (error) {
       setError('No se pudo guardar: ' + error.message)
+      return
+    }
+
+    if (editando) {
+      onGuardado?.()
+      router.refresh()
       return
     }
 
@@ -38,6 +73,7 @@ export default function NuevoEmpleadoForm() {
     setCargo('')
     setFechaIngreso('')
     setSalario('')
+    setEstado('activo')
     setObservaciones('')
     router.refresh()
   }
@@ -66,23 +102,33 @@ export default function NuevoEmpleadoForm() {
 
       <div className="field">
         <label>Salario</label>
-        <input
-          type="number"
-          step="1"
-          min="0"
-          value={salario}
-          onChange={(e) => setSalario(e.target.value)}
-        />
+        <NumeroInput value={salario} onChange={setSalario} />
       </div>
+
+      {editando && (
+        <div className="field">
+          <label>Estado</label>
+          <select value={estado} onChange={(e) => setEstado(e.target.value)}>
+            <option value="activo">Activo</option>
+            <option value="inactivo">Inactivo</option>
+          </select>
+        </div>
+      )}
 
       <div className="field" style={{ flex: 1 }}>
         <label>Observaciones</label>
         <input value={observaciones} onChange={(e) => setObservaciones(e.target.value)} placeholder="Opcional" />
       </div>
 
-      <button type="submit" className="btn btn-primary">
-        Agregar
+      <button type="submit" className="btn btn-primary" disabled={cargando}>
+        {cargando ? (editando ? 'Guardando…' : 'Agregando…') : editando ? 'Guardar cambios' : 'Agregar'}
       </button>
+
+      {editando && (
+        <button type="button" className="btn btn-ghost" onClick={onGuardado}>
+          Cancelar
+        </button>
+      )}
 
       {error && <p style={{ color: 'var(--brick)', width: '100%' }}>{error}</p>}
     </form>
