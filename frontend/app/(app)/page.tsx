@@ -1,30 +1,84 @@
+import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
-import LogoutButton from './logout-button'
+import { getPerfilActual } from '@/lib/supabase/perfil'
+import { calcularResumenPorPeriodos } from '@/lib/resumen-negocio'
+import PanelStats from './panel-stats'
 
 export default async function HomePage() {
+  const { nombre, rol } = await getPerfilActual()
+
+  if (rol !== 'propietario') {
+    return (
+      <div>
+        <div className="topbar">
+          <div>
+            <h2>Hola, {nombre ?? 'Usuario'}</h2>
+            <div className="date">HortiMundo, Caacupé</div>
+          </div>
+        </div>
+
+        <div className="card">
+          <h3>Accesos rápidos</h3>
+          <div className="quick-grid">
+            <Link href="/mercaderia" className="quick-btn">
+              <div className="qi">📦</div>
+              <div className="qt">Mercadería</div>
+            </Link>
+            <Link href="/stock" className="quick-btn">
+              <div className="qi">📊</div>
+              <div className="qt">Stock</div>
+            </Link>
+            <Link href="/combustible" className="quick-btn">
+              <div className="qi">⛽</div>
+              <div className="qt">Combustible</div>
+            </Link>
+            <Link href="/lechugas" className="quick-btn">
+              <div className="qi">🥬</div>
+              <div className="qt">Control de Lechugas</div>
+            </Link>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   const supabase = await createClient()
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  const { data: perfil, error: errorPerfil } = await supabase
-    .from('perfiles')
-    .select('nombre, rol')
-    .eq('id', user?.id)
-    .single()
+  const hoy = new Date()
+  const datosPorPeriodo = await calcularResumenPorPeriodos(supabase, hoy)
 
   return (
-    <div style={{ maxWidth: 600, margin: '60px auto', padding: 24 }}>
-      <h1>HortiMundo</h1>
-      {errorPerfil && <p style={{ color: 'red' }}>Error de perfil: {errorPerfil.message}</p>}
-      <p style={{ fontSize: 12, color: '#888' }}>user.id: {user?.id} — email: {user?.email}</p>
-      <p>
-        Hola, <strong>{perfil?.nombre ?? 'Usuario'}</strong>
-      </p>
-      <p>Tu rol: {perfil?.rol}</p>
+    <div>
+      <div className="topbar">
+        <div>
+          <h2>Buen día, {nombre ?? 'Usuario'}</h2>
+          <div className="date">HortiMundo, Caacupé</div>
+        </div>
+      </div>
 
-      <LogoutButton />
+      <PanelStats datos={datosPorPeriodo} />
+
+      <div className="card">
+        <h3>Accesos rápidos</h3>
+        <div className="sub">Lo que se usa todos los días</div>
+        <div className="quick-grid">
+          <Link href="/ventas" className="quick-btn">
+            <div className="qi">🧾</div>
+            <div className="qt">Cargar venta</div>
+          </Link>
+          <Link href="/clientes" className="quick-btn">
+            <div className="qi">👤</div>
+            <div className="qt">Nuevo cliente</div>
+          </Link>
+          <Link href="/lechugas" className="quick-btn">
+            <div className="qi">🥬</div>
+            <div className="qt">Control lechugas</div>
+          </Link>
+          <Link href="/personal" className="quick-btn">
+            <div className="qi">🧑‍🌾</div>
+            <div className="qt">Personal</div>
+          </Link>
+        </div>
+      </div>
     </div>
   )
 }
