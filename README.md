@@ -31,3 +31,8 @@ Ventas multi-producto, Clientes, Productos, Inventario (mercadería, stock, merm
 ## Estado
 
 Sistema validado en staging, con ventas, inventario y RRHH completos. Facturación electrónica en desarrollo, pendiente de aprobación del timbrado electrónico del cliente.
+
+
+## Uso de IA
+
+Gran parte de la implementación se generó con Claude Code (agente de código de Anthropic), dirigido por mí: definí el alcance y la arquitectura, especifiqué cada funcionalidad, revisé cada cambio antes de aceptarlo, probé manualmente cada módulo en el navegador, y detecté y corregí errores (incluyendo las vulnerabilidades encontradas en la auditoría de seguridad). Estoy reforzando en paralelo mis fundamentos técnicos independientes (JavaScript, TypeScript, SQL, debugging) para poder evaluar y dirigir cada vez mejor el código que produce un agente de IA.
